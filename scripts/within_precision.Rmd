@@ -1,0 +1,197 @@
+---
+title: "MiSeq hqSNP analysis"
+author: "Vincent Caruso"
+date: "September 25, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup}
+
+library(vcfR)
+library(tidyverse)
+library(stringr)
+library(ShortRead)
+
+data_path <- "~/osphl/validation/within_precision"
+
+options(tibble.print_min = 100, tibble.print_max = 40)
+
+```
+
+
+```{r SNP file reading functions}
+
+#' Get the fixed fields of VCF files in a lyve-SET project.
+#' 
+#' @param data_path A directory containing one or more lyve-SET projects.
+#' @param proj_name The name of the lyve-SET project directory.
+#' @return A list of tibbles, one for each VCF file in the project.
+readVCFs <- function(data_path, proj_name){
+  vcf_path <- file.path(data_path, proj_name, "vcf")
+  vcf_files <- list.files(file.path(data_path, proj_name, "vcf"), ".vcf.gz$")
+  replicates <- sapply(str_split(vcf_files, "_"), `[`, 1)
+  
+  vcfs <- list()
+  for (i in seq_along(vcf_files)){
+    vcf <- read.vcfR(file.path(vcf_path, vcf_files[i]), convertNA = FALSE)
+    vcf <- as.tibble(getFIX(vcf), getINFO = TRUE)
+    vcf$POS <- as.integer(vcf$POS)
+    vcfs[[i]] <- vcf
+  }
+  
+  names(vcfs) <- replicates
+  return(vcfs)
+}
+
+#' Extract valid SNPs from a list of VCF data frames.
+#'
+#' @param vcfs A list of VCF data frames, such as returned by 
+#'    \code{\link{readVCFs}}
+#' @return A list of filtered VCF data frames, containing only lines with a
+#'    valid REF allele (A, C, G, T) and a valid ALT allele that passed the
+#'    SNP-calling filter
+getSNPs <- function(vcfs){
+  nucs = c("A", "C", "G", "T")
+  snps <- lapply(vcfs, function(v){
+    snp <- v %>% filter(REF %in% nucs, ALT %in% nucs, FILTER == "PASS")
+  })
+}
+
+
+```
+
+
+```{r SNP processing functions}
+
+# make a table of all unique SNP calls across all samples
+getUniqueSNPs <- function(snps){
+  all_snps <- lapply(snps, function(x) select(x, CHROM, POS))
+  all_snps <- do.call("rbind", all_snps) %>% unique() %>% arrange(CHROM, POS)  
+  return(all_snps)
+}
+
+
+# Build a matrix of every sample's base calls at each position corresponding to a SNP in any sample
+buildSNPMat <- function(all_snps, vcf_list, filter = TRUE){
+  # Inputs:
+  #   all_snps - a `data.frame` with 'CHROM' and 'POS' columns and a row for each SNP to be included in the matrix
+  #   vcf_list - a list of `data.frame`s, where each `data.frame` contains the vcf table for one sample
+  #   filter - a logical indicating whether to remove rows with NA or 'N' from the output `data.frame`
+  #
+  # Outputs:
+  #   snp_mat - a `data.frame` with 'CHROM' and 'POS' columns and a column for each sample in 'vcf_list'. Each
+  #             sample column contains the value in the 'ALT' column corresponding to the 'CHROM' and 'POS'
+  #             values in 'all_snps'. If 'filter' is TRUE, rows containing NA or 'N' will be removed.
+  
+  snp_mat <- all_snps
+  replicates <- names(vcf_list)
+  for (r in replicates){
+    tmp <- left_join(snp_mat, vcf_list[[r]])
+    snp_mat[[r]] <- tmp$ALT
+  }
+  
+  # if requested, remove rows with NAs (i.e. no call in one or more samples) or ambiguous calls ("N")
+  if (filter){
+    snp_mat <- snp_mat %>% na.omit() %>% filter_at(replicates, all_vars(. != "N"))
+  }
+  
+  return(snp_mat)
+}
+
+
+# Create a vector of all unique values of 'ALT' for each row of a SNP matrix
+getAlts <- function(snp_mat, samp_names = NULL){
+  if (is.null(samp_names)) samp_names <- colnames(snp_mat)[-c(1, 2)]
+  #samp_names <- samp_names[!samp_names %in% "alts"]
+  alts <- apply(snp_mat[, samp_names], 1, function(x) paste(unique(x), collapse = ","))
+  return(alts)
+}
+
+
+# Create a vector of logicals indicating whether each row of a SNP matrix has a consensus call or not
+isConsensus <- function(snp_mat, samp_names = NULL){
+  alts <- getAlts(snp_mat, samp_names)
+  consensus <- sapply(alts, nchar) == 1
+  return(consensus)
+}
+
+
+# count number of positions for which all samples have an unambiguous call
+totalCalls <- function(vcf_list){
+  nucs = c("A", "C", "G", "T")
+  replicates <- names(vcf_list)
+  all_call <- vcf_list[[1]] %>% select(CHROM, POS)
+  for (r in replicates){
+    tmp <- inner_join(all_call, vcf_list[[r]])
+    all_call <- tmp %>% filter(ALT %in% c(nucs, ".")) %>% select(CHROM, POS)
+  }
+  return(nrow(all_call))
+}
+
+
+```
+
+Now, process the VCF files for each isolate to determine the number of consensus SNPs, the number sequencing errors (i.e. non-consensus SNPs), the total number of unambiguous calls for the isolate across sequencing replicates, and the error rate.
+```{r analysis}
+
+samples <- list.files(data_path) %>% str_subset("VS")
+summary_stats <- tibble(sample_name = character(),
+                        ref_length = integer(),
+                        avg_base_calls = numeric(),
+                        min_base_calls = integer(),
+                        max_base_calls = integer(),
+                        base_calls_in_common = integer(),
+                        pct_coverage = numeric(),
+                        total_SNPs = integer(),
+                        num_errors = integer(),
+                        pct_precision = numeric(),
+                        err_per_M = numeric())
+
+for (s in samples){
+  # read in VCFs and get SNPs
+  vcfs <- readVCFs(data_path, s)
+  snps <- getSNPs(vcfs)
+  
+  # process SNPs
+  all_snps <- getUniqueSNPs(snps)
+  snp_mat <- buildSNPMat(all_snps, vcfs, filter = TRUE)
+  snp_mat$alts <- getAlts(snp_mat)
+  snp_mat$consensus <- isConsensus(snp_mat)
+  
+  # calculate summary stats
+  ref_len <- sapply(sread(readFasta(file.path(data_path, s, "reference/reference.fasta"))), nchar) %>% sum()
+  mapped <- sapply(vcfs, nrow)
+  avg_calls <- mean(mapped)
+  min_calls <- min(mapped)
+  max_calls <- max(mapped)
+  n_called <- totalCalls(vcfs)
+  pct_cvg <- 100 * n_called / ref_len
+  n_snps <- nrow(snp_mat)
+  n_consensus <- sum(snp_mat$consensus)
+  n_error <- sum(!snp_mat$consensus)
+  precision <- 100 * (n_called - n_error) / n_called
+  error_rate <- 100 * n_error / n_called
+  errors_per_M <- n_error / (n_called / 1e6)
+  cat("The error rate for sample", s, "is", error_rate, "\n")
+  cat("The precision for sample", s, "is", precision, "\n")  
+  
+  new_row <- tibble(sample_name = s, ref_length = ref_len, avg_base_calls = avg_calls, 
+                    min_base_calls = min_calls, max_base_calls = max_calls, 
+                    base_calls_in_common = n_called, pct_coverage = pct_cvg, 
+                    total_SNPs = n_snps, num_errors = n_error, pct_precision = precision, 
+                    errors_per_Mbase = errors_per_M)
+  summary_stats <- rbind(summary_stats, new_row)
+}
+
+# colnames(summary_stats) <- c("sample_name", "ref_length", "avg_base_calls", "min_base_calls", "max_base_calls",
+#                              "base_calls_in_common", "pct_coverage", "total_SNPs", "num_errors", "pct_accuracy")
+
+if (!file_test("-d", file.path(data_path, "results"))) dir.create(file.path(data_path, "results"))
+write_tsv(summary_stats, file.path(data_path, "within_precision_summary.tsv"))
+
+```
+
