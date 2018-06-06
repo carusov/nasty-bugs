@@ -7,8 +7,7 @@
 ### user-specified MiSeq run.
 
 # Define default parameters
-TARGET=$PWD
-BASESPACE=~/osphl/basespace
+BASESPACE=~/basespace
 
 while [[ $# -gt 0 ]]
 do
@@ -25,7 +24,7 @@ do
 	    BASESPACE="$2"
 	    shift;;
 	-h|--help|*)
-	    printf "\nUSAGE: download_run_basespace.sh -r --run run_ID [options]"
+	    printf "\nUSAGE: download_run_basespace.sh -r --run run_ID [options]\n"
 	    printf "\nOptions \t[default]"
 	    printf "\n-t --target \t[./run_ID] \t\t\t\ttarget directory"
 	    printf "\n-b --basespace \t["$BASESPACE"] \tbasespace mount point"
@@ -55,7 +54,13 @@ then
     exit 1
 fi
 
-# Check to see if target directory exists
+# Create the default target directory name if necessary
+if [ -z "$TARGET" ]
+then
+    TARGET=$PWD/"$RUN"
+fi
+
+# Check to see if target directory exists, and create it if needed
 if [ ! -d "$TARGET" ]
 then
     mkdir -p "$TARGET"
@@ -70,23 +75,32 @@ printf "\nBASESPACE MOUNT POINT: %s" "$BASESPACE"
 printf "\n\n"
 
 # Extract run project and sample ID info
+echo "Getting run info..."
+echo
 get_run_info.awk "$BASESPACE"/Runs/"$RUN"/Files/SampleSheet.csv \
 		 > "$TARGET"/sample_IDs.txt
+echo "Finished processing run info."
+echo
 
 # Download the sample FASTQ files
 cat "$TARGET"/sample_IDs.txt | while read -r p s
 do
-    if [ ! -d "$TARGET"/"$s" ]
-    then
-	mkdir "$TARGET"/"$s"
-    fi
+    # The following stores each sample in a subdirectory
+#    if [ ! -d "$TARGET"/"$s" ]
+#   then
+#	mkdir "$TARGET"/"$s"
+#    fi
     
     download_sample_basespace.sh  -p "$p" \
 				  -n "$s" \
-				  -t "$TARGET"/"$s" \
 				  -b "$BASESPACE" \
 				  -m exact \
-				  -r "$RUN"
+				  -r "$RUN" \
+				  -t "$TARGET"
+#				  -t "$TARGET"/"$s" 
+    
+
+				  
 
 done
 
