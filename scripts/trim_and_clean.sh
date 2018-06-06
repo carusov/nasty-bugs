@@ -11,6 +11,7 @@
 
 # Define default parameters
 INDIR=$PWD
+MINQ=30
 AVGQ=10
 MINL=62
 
@@ -52,10 +53,20 @@ do
 done
 
 # Check for valid input parameters
-if [ -z $MINQ ] && [ -z $TRIM ];then
-    printf "\nERROR: You must specify either a minimum quality (-q) or"
-    printf "\nnumber of bases to trim (-t).\n"
+#if [ -z $MINQ ] && [ -z $TRIM ]
+#then
+#    printf "\nERROR: You must specify either a minimum quality (-q) or"
+#    printf "\nnumber of bases to trim (-t).\n"
+#    exit 1
+#fi
+
+# Make sure input directory exists
+if [ ! -d "$INDIR" ]
+then
+    printf "\nERROR: The specified input directory does not exist.\n"
     exit 1
+else
+    INDIR=$(readlink -f "$INDIR")
 fi
 
 # Create output directory
@@ -70,37 +81,46 @@ for f in $(ls "$INDIR"/*_R1*.fastq.gz); do
     pre=${b%_R1*}
     suf=${b#*_R1}
 
-    # Assemble paired-end read files
-    run_assembly_shuffleReads.pl "$INDIR"/$pre"_R1"$suf "$INDIR"/$pre"_R2"$suf \
-				 > "$INDIR"/clean/$pre".fastq"
-    printf "\nSample %s assembled\n\n" $pre
+    # Check to see if sample has already been cleaned
+    if [ -f "$INDIR"/clean/$pre".cleaned.fastq.gz" ];
+    then
+	printf "Sample %s has already been cleaned\n" $pre
 
-    # Trim and clean assembled read files
-    if [ ! -z $MINQ ];then
-	run_assembly_trimClean.pl -i "$INDIR"/clean/$pre".fastq" \
-				  -o "$INDIR"/clean/$pre".cleaned.fastq" \
-				  --min_quality $MINQ \
-				  --min_avg_quality $AVGQ \
-				  --min_length $MINL \
-				  --nosingletons \
-				  --numcpus 4
-    elif [ ! -z $TRIM ];then
-    	run_assembly_trimClean.pl -i "$INDIR"/clean/$pre".fastq" \
-				  -o "$INDIR"/clean/$pre".cleaned.fastq" \
-				  --bases_to_trim $TRIM \
-				  --min_avg_quality $AVGQ \
-				  --min_length $MINL \
-				  --nosingletons \
-				  --numcpus 4
+    else
+	# Assemble paired-end read files
+	run_assembly_shuffleReads.pl "$INDIR"/$pre"_R1"$suf "$INDIR"/$pre"_R2"$suf \
+				     > "$INDIR"/clean/$pre".fastq"
+	printf "\nSample %s assembled\n\n" $pre
+
+	# Trim and clean assembled read files
+	# If user specifies trim length, use that for trimming instead of quality
+	if [ ! -z $TRIM ]
+	then
+    	    run_assembly_trimClean.pl -i "$INDIR"/clean/$pre".fastq" \
+				      -o "$INDIR"/clean/$pre".cleaned.fastq" \
+				      --bases_to_trim $TRIM \
+				      --min_avg_quality $AVGQ \
+				      --min_length $MINL \
+				      --nosingletons \
+				      --numcpus 4
+	else
+	    run_assembly_trimClean.pl -i "$INDIR"/clean/$pre".fastq" \
+				      -o "$INDIR"/clean/$pre".cleaned.fastq" \
+				      --min_quality $MINQ \
+				      --min_avg_quality $AVGQ \
+				      --min_length $MINL \
+				      --nosingletons \
+				      --numcpus 4
+	fi
+
+	# Compress cleaned files
+	#    gzip "$INDIR"/clean/$pre".cleaned.fastq"
+	pigz "$INDIR"/clean/$pre".cleaned.fastq"    
+
+	# Remove intermediate assembled read files
+	rm "$INDIR"/clean/$pre".fastq"
+	
+	printf "\nSample %s trimmed and cleaned\n" $pre
     fi
-
-    # Compress cleaned files
-    gzip "$INDIR"/clean/$pre".cleaned.fastq"
-
-    # Remove intermediate assembled read files
-    rm "$INDIR"/clean/$pre".fastq"
-    
-    printf "\nSample %s trimmed and cleaned\n" $pre
-
 done
 #> & "$INDIR"/clean/cleaning.log &
