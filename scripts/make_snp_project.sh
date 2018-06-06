@@ -9,8 +9,8 @@
 ### added to the project.
 
 # Define default variables values
-REFDIR=~/osphl/validation/references
-SAMPDIR=$PWD
+REFDIR=~/references
+WDIR=$PWD
 
 # Parse command-line options
 while [[ $# -gt 0 ]]
@@ -18,11 +18,11 @@ do
     key="$1"
 
     case $key in
-	-s|--samp_name)
+	-s|--sname)
 	    NAME="$2"
 	    shift;;
-	-w|--samp_dir)
-	    SAMPDIR="$2"
+	-w|--work_dir)
+	    WDIR="$2"
 	    shift;;
 	-r|--ref_assembly)
 	    REF="$2"
@@ -34,12 +34,12 @@ do
 	    TARGET="$2"
 	    shift;;
 	-h|--help|*)
-	    printf "\nUSAGE: make_snp_project.sh -s --samp_name sample_name\n"
+	    printf "\nUSAGE: make_snp_project.sh -s --sname sample_name\n"
 	    printf "\nOptions: \t[default]"
-	    printf "\n-w --samp_dir \t[current directory] \t\t\tsample FASTQ directory"
-	    printf "\n-r --ref_assembly \t\t\t\t\treference assembly name"
-	    printf "\n-d --ref_dir \t[~/osphl/validation/references] \treference directory"
-	    printf "\n-t --target \t[current directory/sample name] \ttarget project directory, if different from sample name\n"
+	    printf "\n-w --work_dir \t[current directory] \t\tworking directory of samples"
+	    printf "\n-r --ref_assembly \t\t\t\treference assembly name"
+	    printf "\n-d --ref_dir \t[~/osphl/validation/references] reference directory"
+	    printf "\n-t --target \t[current directory/sample name] target project directory\n"
 	    printf "\nNote: If more than one assembly matches the reference assembly name"
 	    printf "\ngiven, they will all be added to the project, but only the last name"
 	    printf "\nwill be used as the reference, unless you change the symlink in"
@@ -54,7 +54,7 @@ done
 
 
 # Construct file paths
-SAMPDIR=$(readlink -f "$SAMPDIR")
+WDIR=$(readlink -f "$WDIR")
 REFDIR=$(readlink -f "$REFDIR")
 
 if [ -z "$TARGET" ]; then
@@ -68,17 +68,18 @@ fi
 set_manage.pl "$TARGET" --create
 
 
-# Add sample FASTQ reads to project
-if [ ! -d "$SAMPDIR"/"$NAME" ]; then
-    printf "\nWarning: the sample was not found in the sample directory."
+# Check to see if specified sample file(s) exist
+files=$(ls "$WDIR" | grep "$NAME")
+if [ -z "$files" ]; then
+    printf "\nWarning: the sample was not found in the working directory."
     printf "\nNo FASTQ read files will be added to the sample project.\n"
 else
-    COUNT=0
-#    for f in $(ls "$SAMPDIR"/"$NAME"/clean/*.fastq* | egrep "VS[0-9]{2}-[0-9]-.+"); do
-   for f in $(ls "$SAMPDIR"/"$NAME"/clean/*.fastq*); do
-	set_manage.pl "$TARGET" --add-reads "$f"
-	let COUNT=COUNT+1
+    # Add sample FASTQ reads to project
+    for f in $files
+    do
+	set_manage.pl "$TARGET" --add-reads "$WDIR"/$f
     done
+    COUNT=$(ls "$TARGET"/reads | wc -l)
     printf "\n%d FASTQ files added to project %s\n\n" $COUNT "$TARGET"
 fi
 
