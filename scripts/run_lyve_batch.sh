@@ -20,6 +20,9 @@ do
 	-f|--file_name)
 	    FNAME="$2"
 	    shift;;
+	-i|--in_dir)
+	    INDIR="$2"
+	    shift;;
 	-F|--allowed_flanking)
 	    FLANK="$2"
 	    shift;;
@@ -35,6 +38,7 @@ do
 	-h|--help|*)
 	    printf "\nUSAGE: run_lyve_batch.sh -f --file_name project_list_file [options]\n"
 	    printf "\nOptions: \t\tdefault"
+	    printf "\n-i --in_dir \t[current directory] \tinput directory"
 	    printf "\n-F --allowed_flanking \t0 \t\tallowed flanking distance in bp for"
 	    printf "\n\t\t\t\t\t\tnearby nucleotides to be considered high quality"
 	    printf "\n-p --min_alt_frac \t0.75 \t\tpercent consensus required for a SNP to be called"
@@ -53,9 +57,11 @@ if [ -z $FNAME ];then
     exit
 fi
 
+INDIR=$(readlink -f "$INDIR")
+
 while read -r proj
 do
-    launch_set.pl ${proj[0]} \
+    launch_set.pl "$INDIR"/${proj[0]} \
 		  --allowedFlanking $FLANK \
 		  --min_alt_frac $FRAC \
 		  --min_coverage $COVER \
