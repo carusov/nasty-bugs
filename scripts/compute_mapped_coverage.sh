@@ -42,15 +42,16 @@ INDIR=$(readlink -f "$INDIR")
 OUTFILE=$(readlink -f "$OUTFILE")
 
 printf "\nINPUT DIRECTORY: %s" "$INDIR"
-printf "\nOUTPUT FILE: %s\n" "$OUTFILE"
+printf "\nOUTPUT FILE: %s\n\n" "$OUTFILE"
 
 calc(){ awk 'BEGIN { print "$*" }'; }
 
-printf "Project\tSample\tFraction covered\tAverage depth\n" > "$OUTFILE"
+header="Project\tSample\tFraction covered\tAverage depth\n"
+printf "$header" > "$OUTFILE"
 
-for dir in $(ls -d */)
+for dir in $(find "$INDIR"/* -prune -type d)
 do
-    dir="${dir%/}"
+#    dir="${dir%/}"
     if [ -d "$dir"/bam/ ] && [ -d "$dir"/reference/ ]
     then
 	if [ "$(ls -A "$dir"/bam)" ] && [ "$(ls -A "$dir"/reference)" ]
@@ -61,15 +62,15 @@ do
 	    for f in $(ls "$dir"/bam/*.bam)
 	    do
 		sample=${f##*/}
-		sample=${sample%%_*}
+		sample=${sample%.fastq.gz*}
 		coverage=($(samtools depth "$f" | \
 				   awk '{sum+=$3; count++} END {print count, sum/count}'))
 #		frac_covered=$(calc ${coverage[0]} / $ref_len )
 		frac_covered=$(echo "scale=4; ${coverage[0]} / $ref_len" | bc)
 		avg_depth=${coverage[1]}
 
-		printf "%s\t%s\t%s\t%s\n" "$dir" "$sample" $frac_covered $avg_depth
-		printf "%s\t%s\t%s\t%s\n" "$dir" "$sample" $frac_covered $avg_depth \
+		printf "%s\t%s\t%s\t%s\n" "${dir##*/}" "$sample" $frac_covered $avg_depth
+		printf "%s\t%s\t%s\t%s\n" "${dir##*/}" "$sample" $frac_covered $avg_depth \
 		       >> "$OUTFILE"
 	    done
 	fi
