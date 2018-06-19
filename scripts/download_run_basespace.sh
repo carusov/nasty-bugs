@@ -23,7 +23,7 @@ do
 	-b|--basespace)
 	    BASESPACE="$2"
 	    shift;;
-	-h|--help|*)
+	-h|--help)
 	    printf "\nUSAGE: download_run_basespace.sh -r --run run_ID [options]\n"
 	    printf "\nOptions \t[default]"
 	    printf "\n-t --target \t[./run_ID] \t\t\t\ttarget directory"
@@ -31,18 +31,20 @@ do
 	    printf "\n\n"
 	    exit;;
 	*)
-	;;
+    	    printf "\nERROR: Invalid script usage. Here is the proper usage for this script:\n"
+	    download_sample_basespace.sh -h
+	    exit 1;;
 
     esac
     shift
 done
 
 
-# Check to see if basespace is mounted
-if [ ! "$(ls -A $BASESPACE)" ]
-then
-    basemount -c routine "$BASESPACE"
-fi
+# # Check to see if basespace is mounted
+# if [ ! "$(ls -A $BASESPACE)" ]
+# then
+#     basemount -c routine "$BASESPACE"
+# fi
 
 # Make sure the specified run exists
 if [ ! -d "$BASESPACE"/Runs/"$RUN" ]
@@ -85,23 +87,13 @@ echo
 # Download the sample FASTQ files
 cat "$TARGET"/sample_IDs.txt | while read -r p s
 do
-    # The following stores each sample in a subdirectory
-#    if [ ! -d "$TARGET"/"$s" ]
-#   then
-#	mkdir "$TARGET"/"$s"
-#    fi
-    
+
     download_sample_basespace.sh  -p "$p" \
 				  -n "$s" \
 				  -b "$BASESPACE" \
-				  -m exact \
 				  -r "$RUN" \
 				  -t "$TARGET"
-#				  -t "$TARGET"/"$s" 
-    
-
-				  
 
 done
 
-printf "\n\n"
+echo
