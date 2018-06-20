@@ -40,11 +40,11 @@ do
 done
 
 
-# # Check to see if basespace is mounted
-# if [ ! "$(ls -A $BASESPACE)" ]
-# then
-#     basemount -c routine "$BASESPACE"
-# fi
+# Check to see if basespace is mounted
+if [ ! "$(ls -A $BASESPACE)" ]
+then
+    basemount -c routine "$BASESPACE"
+fi
 
 # Make sure the specified run exists
 if [ ! -d "$BASESPACE"/Runs/"$RUN" ]

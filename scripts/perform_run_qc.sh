@@ -47,9 +47,9 @@ do
 	    printf "\nUSAGE: perform_run_qc.sh -r run_ID [options]\n"
 	    printf "\nOptions: \tdefault"
 	    printf "\n-t --target \t[./run_ID] \toutput directory"
-	    printf "\n-n --num_cpus \t[8] \t\t\tnumber of cpus"
-	    printf "\n--fast \t[default] \testimate stats using 1% of reads"
-	    printf "\n--full \t\t\tcompute stats using all reads\n\n"
+	    printf "\n-n --num_cpus \t[8] \t\tnumber of cpus"
+	    printf "\n--fast \t\t[default] \testimate stats using 1%% of reads"
+	    printf "\n--full \t\t\t\tcompute stats using all reads\n\n"
 	    exit;;
 	*)
 	;;
