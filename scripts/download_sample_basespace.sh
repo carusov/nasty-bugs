@@ -143,10 +143,7 @@ fi
 
 # Replace '_' with '-' to match MiSeq file names
 pattern=${PATTERN//_/-}
-#samples=$(ls "$SDIR" | grep "$PATTERN")
-#pushd "$SDIR" > /dev/null
 samples=("$SDIR"/*"$PATTERN"*)
-#popd > /dev/null
 
 # Check to see if any matching samples were found
 if [ -z "$samples" ]
@@ -175,12 +172,9 @@ if [ "$MODE" = "regex" ]
 then
 
     # Iterate over all samples matching PATTERN in reverse order (newest first)
-    #    echo "$samples" | sort -r | while read -r s
     for ((i=${#samples[@]} - 1; i >= 0; i--))
     do
 
-#	s="${samples[i]##*/}"
-#	name=$(ls "$SDIR"/"${samples[i]}"/Files | grep "_R1")
 	name=$(ls "${samples[i]}"/Files | grep "_R1")	
 	name=${name%%_*}
 	
@@ -197,7 +191,6 @@ then
 	    then
 		
 		newname=${name}_R1.fastq.gz
-#		cp "$SDIR"/"${samples[i]}"/Files/*R1*.gz "$TARGET"/temp_R1.gz
 		cp "${samples[i]}"/Files/*R1*.gz "$TARGET"/temp_R1.gz	
 		mv "$TARGET"/temp_R1.gz "$TARGET"/"$newname"
 		chmod 664 "$TARGET"/"$newname"
@@ -208,7 +201,6 @@ then
 	    then
 		
 		newname=${name}_R2.fastq.gz
-#		cp "$SDIR"/"${samples[i]}"/Files/*R2*.gz "$TARGET"/temp_R2.gz
 		cp "${samples[i]}"/Files/*R2*.gz "$TARGET"/temp_R2.gz	
 		mv "$TARGET"/temp_R2.gz "$TARGET"/"$newname"
 		chmod 664 "$TARGET"/"$newname"
@@ -234,11 +226,9 @@ then
 
     else
 	# Iterate over samples in reverse order (newest to oldest)
-	#	while read -r s
 	for ((i=${#samples[@]} - 1; i >= 0; i--))	
 	do
 	    
-#	    name=$(ls "$SDIR"/"${samples[i]}"/Files | grep "_R1")
 	    name=$(ls "${samples[i]}"/Files | grep "_R1")    
 	    name=${name%%_*}
 	    
@@ -250,8 +240,7 @@ then
 		then
 		    
 		    newname=${name}_R1.fastq.gz
-#		    cp "$SDIR"/"${samples[i]}"/Files/*R1*.gz "$TARGET"/temp_R1.gz
-		    cp "${samples[i]}"/Files/*R1*.gz "$TARGET"/temp_R1.gz	    
+		    cp "${samples[i]}"/Files/*R1*.gz "$TARGET"/temp_R1.gz
 		    mv "$TARGET"/temp_R1.gz "$TARGET"/"$newname"
 		    chmod 664 "$TARGET"/"$newname"
 		    
@@ -261,8 +250,7 @@ then
 		then
 		    
 		    newname=${name}_R2.fastq.gz
-#		    cp "$SDIR"/"${samples[i]}"/Files/*R2*.gz "$TARGET"/temp_R2.gz
-		    cp "${samples[i]}"/Files/*R2*.gz "$TARGET"/temp_R2.gz	    
+		    cp "${samples[i]}"/Files/*R2*.gz "$TARGET"/temp_R2.gz
 		    mv "$TARGET"/temp_R2.gz "$TARGET"/"$newname"
 		    chmod 664 "$TARGET"/"$newname"
 		    
@@ -273,7 +261,6 @@ then
 
 	    fi
 	done
-	# <<< $(echo "$samples" | sort -r)
 
 	if [ $found -ne 1 ]
 	then
