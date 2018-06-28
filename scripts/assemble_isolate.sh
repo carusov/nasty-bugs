@@ -28,11 +28,13 @@ do
 	    printf "\nOptions: \t[default]"
 	    printf "\n-w --working \t[current directory] \t\tdirectory of FASTQ files"
 	    printf "\n-o --output \t[current/spades_output] \tdirectory for SPAdes output"
-	    printf "\n"
+	    printf "\n\n"
 	    exit;;
 	*)
-
-	;;
+    	    printf "\nERROR: Invalid script usage. Here is the proper usage for this script:\n"
+	    assemble_isolate.sh -h
+	    exit 1
+	    ;;
 
     esac
     shift

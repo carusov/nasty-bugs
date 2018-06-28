@@ -35,18 +35,23 @@ do
 	-n|--num_cpus)
 	    CPU="$2"
 	    shift;;
-	-h|--help|*)
+	-h|--help)
 	    printf "\nUSAGE: run_lyve_batch.sh -f --file_name project_list_file [options]\n"
 	    printf "\nOptions: \t\tdefault"
 	    printf "\n-i --in_dir \t[current directory] \tinput directory"
 	    printf "\n-F --allowed_flanking \t0 \t\tallowed flanking distance in bp for"
-	    printf "\n\t\t\t\t\t\tnearby nucleotides to be considered high quality"
-	    printf "\n-p --min_alt_frac \t0.75 \t\tpercent consensus required for a SNP to be called"
-	    printf "\n-c --min_coverage \t10 \t\tminimum coverage required for a SNP to be called"
+	    printf "\n\t\t\t\t\tnearby nucleotides to be considered"
+	    printf "\n\t\t\t\t\thigh quality"
+	    printf "\n-p --min_alt_frac \t0.75 \t\tpercent consensus required for a SNP to"
+	    printf "\n\t\t\t\t\tbe called"
+	    printf "\n-c --min_coverage \t10 \t\tminimum coverage required for a SNP to"
+	    printf "\n\t\t\t\t\tbe called"
 	    printf "\n-n --num_cpus \t\t1 \t\tnumber of cpus to use\n\n"
 	    exit;;
 	*)
-	;;
+    	    printf "\nERROR: Invalid script usage. Here is the proper usage for this script:\n"
+	    run_lyve_batch.sh -h
+	    exit 1;;
     esac
     shift
 done

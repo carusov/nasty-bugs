@@ -2,11 +2,11 @@
 
 ### Author: Vincent Caruso
 ### Date: 11/16/2017
-### This script creates a new lyve-SET project with the given sample name and populates
-### it with the filtered (trimmed and cleaned)) FASTQ files from the isolates of that
-### sample. If provided with a reference name, it will also search a directory of
-### reference genome assemblies, and if a match is found, this reference will also be
-### added to the project.
+### This script creates a new lyve-SET project with the given sample name and 
+### populates it with FASTQ files from isolates of that sample. If provided with
+### a reference name, it will also search a directory of reference genome
+### assemblies, and if a match is found, this reference will also be added to
+### the project.
 
 # Define default variables values
 REFDIR=~/references
@@ -33,7 +33,7 @@ do
 	-t|--target_dir)
 	    TARGET="$2"
 	    shift;;
-	-h|--help|*)
+	-h|--help)
 	    printf "\nUSAGE: make_snp_project.sh -s --sname sample_name\n"
 	    printf "\nOptions: \t[default]"
 	    printf "\n-w --work_dir \t[current directory] \t\tworking directory of samples"
@@ -46,8 +46,10 @@ do
 	    printf "\nthe project's 'reference' directory.\n\n"
 	    exit;;
 	*)
+    	    printf "\nERROR: Invalid script usage. Here is the proper usage for this script:\n"
+	    make_snp_project.sh -h
+	    exit 1;;
 
-	;;
     esac
     shift
 done

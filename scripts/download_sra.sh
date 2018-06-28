@@ -21,17 +21,19 @@ do
 	-o|--out_dir)
 	    OUTDIR="$2"
 	    shift;;
-	-h|--help|*)
+	-h|--help)
 	    printf "\nUSAGE: download_sra.sh [-f file_name.txt]|[-a SRR_accession]"
 	    printf "\nOptions: \t[default]"
-	    printf "\n-f --file_name \t\ttext file with accessions, one per line"
-	    printf "\n\t\t\t\t(with optional renaming string)"
-	    printf "\n-a --accession \t\tSRR run accession number"
-	    printf "\n-r --rename \t\trenaming string\n"
+	    printf "\n-f --file_name \t\t\ttext file with accessions, one per line"
+	    printf "\n\t\t\t\t\t(with optional renaming string)"
+	    printf "\n-a --accession \t\t\tSRR run accession number"
+	    printf "\n-r --rename \t\t\trenaming string\n\n"
 	    exit;;
 	*)
+    	    printf "\nERROR: Invalid script usage. Here is the proper usage for this script:\n"
+	    download_sra.sh -h
+	    exit 1;;
 
-	;;
     esac
     shift
 done

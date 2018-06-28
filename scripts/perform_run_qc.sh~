@@ -1,0 +1,58 @@
+#!/bin/bash
+
+### Author: Vincent Caruso
+### Date Written: June 6, 2018
+### Date Modified: June 6, 2018
+### Purpose: This script measures basic QC metrics for each sample in a
+### specified run, and generates a simple QC report. The script is intended to
+### perform the same or similar QC checks that PulseNet performs when they
+### receive isolate sequence data, in order to catch samples that would not
+### pass PulseNet's QC and flag them for re-sequencing before they are
+### submitted to PulseNet. 
+
+# Define default parameters
+ECOLI_LEN=5000000
+SAL_LEN=5000000
+CAMPY_LEN=1600000
+LIST_LEN=3000000
+
+
+# Parse command-line options
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+
+    case $key in
+	-f|--file_name)
+	    FNAME="$2"
+	    shift;;
+	-i|--in_dir)
+	    INDIR="$2"
+	    shift;;
+	-F|--allowed_flanking)
+	    FLANK="$2"
+	    shift;;
+	-p|--min_alt_frac)
+	    FRAC="$2"
+	    shift;;
+	-c|--min_coverage)
+	    COVER="$2"
+	    shift;;
+	-n|--num_cpus)
+	    CPU="$2"
+	    shift;;
+	-h|--help|*)
+	    printf "\nUSAGE: run_lyve_batch.sh -f --file_name project_list_file [options]\n"
+	    printf "\nOptions: \t\tdefault"
+	    printf "\n-i --in_dir \t[current directory] \tinput directory"
+	    printf "\n-F --allowed_flanking \t0 \t\tallowed flanking distance in bp for"
+	    printf "\n\t\t\t\t\t\tnearby nucleotides to be considered high quality"
+	    printf "\n-p --min_alt_frac \t0.75 \t\tpercent consensus required for a SNP to be called"
+	    printf "\n-c --min_coverage \t10 \t\tminimum coverage required for a SNP to be called"
+	    printf "\n-n --num_cpus \t\t1 \t\tnumber of cpus to use\n\n"
+	    exit;;
+	*)
+	;;
+    esac
+    shift
+done

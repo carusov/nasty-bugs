@@ -32,7 +32,7 @@ do
 	    exit;;
 	*)
     	    printf "\nERROR: Invalid script usage. Here is the proper usage for this script:\n"
-	    download_sample_basespace.sh -h
+	    download_run_basespace.sh -h
 	    exit 1;;
 
     esac

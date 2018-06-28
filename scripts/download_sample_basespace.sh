@@ -41,7 +41,8 @@ do
 	    printf "\n-p --project \t[guess from sample name pattern] \tproject name"
 	    printf "\n-t --target \t[current directory] \t\t\ttarget directory"
 	    printf "\n-b --basespace \t[~/basespace] \t\t\t\tbasespace mount point"
-	    printf "\n-r --run \t[NONE] \t\t\trun name (only used for exact matching)"
+	    printf "\n-r --run \t[NONE] \t\t\t\t\trun name (only used for"
+	    printf "\n\t\t\t\t\t\t\texact matching)"
 	    printf "\n\n"
 	    exit;;
 	*)
@@ -73,27 +74,22 @@ then
     # Try to guess the project from the sample name pattern
     if [[ "$PATTERN" =~ "PNUSAC" ]]
     then
-	
 	PROJECT="PRJNA239251"
 	
     elif [[ "$PATTERN" =~ "PNUSAE" ]]
     then
-	
 	PROJECT="PRJNA218110"
 	
     elif [[ "$PATTERN" =~ "PNUSAL" ]]
     then
-	
 	PROJECT="PRJNA212117"
 	
     elif [[ "$PATTERN" =~ "PNUSAS" ]]
     then
-	
 	PROJECT="PRJNA230403"
 	
-    elif [[ "$PATTERN" =~ "PNUSAF" ]]
+    elif [[ "$PATTERN" =~ "PNUSAV" ]]
     then
-	
 	PROJECT="PRJNA266293"
 	
     else
@@ -107,11 +103,9 @@ fi
 
 if [ -z "$RUN" ]
 then
-    
     MODE=regex
 
 else
-
     MODE=exact
 
 fi
@@ -122,7 +116,6 @@ fi
 # Check to see if basespace is mounted
 if [ ! "$(ls -A $BASESPACE)" ]
 then
-    
     basemount -c routine "$BASESPACE"
     
 fi
@@ -130,12 +123,10 @@ fi
 # Make sure the project exists
 if [ ! -d "$BASESPACE"/Projects/"$PROJECT" ];
 then
-    
     printf "\nERROR: Project ${PROJECT} does not exist. Double-check the project name and try again.\n\n"
     exit 1;
     
 else
-    
     SDIR="$BASESPACE"/Projects/"$PROJECT"/Samples/
 
 fi
@@ -148,7 +139,6 @@ samples=("$SDIR"/*"$PATTERN"*)
 # Check to see if any matching samples were found
 if [ -z "$samples" ]
 then
-    
     printf "No matching samples were found. Nothing was downloaded.\n\n"
     exit 2
     
@@ -157,7 +147,6 @@ fi
 # Create the target directory if necessary
 if [ ! -d "$TARGET" ]
 then
-    
     mkdir -p "$TARGET"
     
 fi
@@ -170,7 +159,6 @@ rm -f "$TARGET"/temp_R*.gz
 
 if [ "$MODE" = "regex" ]
 then
-
     # Iterate over all samples matching PATTERN in reverse order (newest first)
     for ((i=${#samples[@]} - 1; i >= 0; i--))
     do
@@ -182,7 +170,6 @@ then
 	if [ -f "$TARGET"/"$name"*R1*.fastq.gz ] &&
 	       [ -f "$TARGET"/"$name"*R2*.fastq.gz ]
 	then
-	    
 	    printf "Sample %s already exists locally\n" "$s"
 	    
 	else
@@ -199,7 +186,6 @@ then
 	    
 	    if [ ! -f "$TARGET"/"$name"*R2*.gz ]
 	    then
-		
 		newname=${name}_R2.fastq.gz
 		cp "${samples[i]}"/Files/*R2*.gz "$TARGET"/temp_R2.gz	
 		mv "$TARGET"/temp_R2.gz "$TARGET"/"$newname"
@@ -221,7 +207,6 @@ then
     pattern=${PATTERN//_/-}
     if [ $(ls "$TARGET" | grep "$pattern".*"$RUN" | wc -l) -eq 2 ]
     then
-	
 	printf "Sample %s from run %s already exists locally\n" "$PATTERN" "$RUN"
 
     else
@@ -238,7 +223,6 @@ then
 		
 		if [ ! -f "$TARGET"/"$name"*R1*.gz ]
 		then
-		    
 		    newname=${name}_R1.fastq.gz
 		    cp "${samples[i]}"/Files/*R1*.gz "$TARGET"/temp_R1.gz
 		    mv "$TARGET"/temp_R1.gz "$TARGET"/"$newname"
@@ -248,7 +232,6 @@ then
 		
 		if [ ! -f "$TARGET"/"$name"*R2*.gz ]
 		then
-		    
 		    newname=${name}_R2.fastq.gz
 		    cp "${samples[i]}"/Files/*R2*.gz "$TARGET"/temp_R2.gz
 		    mv "$TARGET"/temp_R2.gz "$TARGET"/"$newname"
@@ -268,5 +251,4 @@ then
 	    printf "Nothing was downloaded.\n"
 	fi
     fi
-
 fi

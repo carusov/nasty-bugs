@@ -26,14 +26,17 @@ do
 	-o|--outfile)
 	    OUTFILE="$2"
 	    shift;;
- 	-h|--help|*)
+ 	-h|--help)
 	    printf "\nUSAGE: compute_mapped_coverage.sh [options]\n"
-	    printf "\nOptions: \tdefault"
-	    printf "\n-i --indir \tcurrent directory \tinput directory"
-	    printf "\n-o --outfile \tcoverage_stats.txt \toutput file\n"
+	    printf "\nOptions: \t[default]"
+	    printf "\n-i --indir \t[current directory] \tinput directory"
+	    printf "\n-o --outfile \t[./coverage_stats.txt] \toutput file\n\n"
 	    exit;;
 	*)
-	;;
+    	    printf "\nERROR: Invalid script usage. Here is the proper usage for this script:\n"
+	    compute_mapped_coverage.sh -h
+	    exit 1;;
+
     esac
     shift
 done

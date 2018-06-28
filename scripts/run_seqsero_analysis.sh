@@ -27,14 +27,16 @@ do
 	-p|--prefix)
 	    PREFIX="$2"
 	    shift;;
-	-h|--help|*)
+	-h|--help)
 	    printf "\nUSAGE: run_seqsero_analysis.sh [options]\n"
 	    printf "\nOptions: \t[ default ]"
 	    printf "\n-w --working \t[ current directory ] \tworking directory"
 	    printf "\n-p --prefix \t[ VS ] \t\t\tsample name prefix\n\n"
 	    exit;;
 	*)
-	;;
+    	    printf "\nERROR: Invalid script usage. Here is the proper usage for this script:\n"
+	    run_seqsero_analysis.sh -h
+	    exit 1;;
     esac
     shift
 done

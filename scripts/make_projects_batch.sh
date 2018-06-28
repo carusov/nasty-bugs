@@ -24,7 +24,7 @@ do
 	-o|--out_dir)
 	    OUTDIR="$2"
 	    shift;;
-	-h|--help|*)
+	-h|--help)
 	    printf "\nUSAGE: make_projects_batch.sh -f --file_name variable_file_name\n"
 	    printf "Options: \t[default]"
 	    printf "\n-w --work_dir \t[current directory] \t\tworking sample directory"
@@ -32,8 +32,10 @@ do
 	    printf "\n-o --out_dir \t[current directory] \t\toutput directory\n\n"
 	    exit;;
 	*)
+    	    printf "\nERROR: Invalid script usage. Here is the proper usage for this script:\n"
+	    make_projects_batch.sh -h
+	    exit 1;;
 
-	;;
     esac
     shift
 done

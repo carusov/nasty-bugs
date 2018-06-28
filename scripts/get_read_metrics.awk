@@ -2,7 +2,7 @@
 
 BEGIN {
     FS = "\t"
-    OFS = "\t"
+    OFS = ","
     minq = 30
 }
 
@@ -19,30 +19,13 @@ NR > 1 {
 	if ($6 < minq){
 	    reason = "low quality"
 	    if ($9 < cov){
-		reason = reason", low coverage"
+		reason = reason"| low coverage"
 	    }
 	}
 	else{
 	    reason = "low coverage"
 	}
     }
-
-    # if ($6 >= 30){
-    # 	if ($9 >= cov){
-    # 	    status = "pass"
-    # 	    reason = ""
-    # 	}
-    # 	else {
-    # 	    status = "fail"
-    # 	    reason = "low coverage"
-    # 	}
-    # }
-    # else {
-    # 	status = "fail"
-    # 	reason = "low quality"
-    # 	if ($9 < cov)
-    # 	    reason = reason", low coverage"
-    # }
 
     print $0, status, reason
 
