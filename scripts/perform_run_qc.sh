@@ -11,7 +11,7 @@
 ### submitted to PulseNet. 
 
 # Define default parameters and constants
-HEADER="Sample\tAvg read length\tTotal bases\tMin read length\tMax read length\tAvg quality\tNumber of reads\tPaired end?\tCoverage\tRead score\tMedian fragment length\tPass/Fail\tReason for failure\n"
+HEADER="Sample name,Avg read length,Total bases,Min read length,Max read length,Avg quality,Number of reads,Paired end?,Coverage,Read score,Median fragment length,Pass/Fail,Reason for failure\n"
 
 MODE=fast
 
@@ -19,7 +19,15 @@ ECOLI_LEN=5000000
 SAL_LEN=5000000
 CAMPY_LEN=1600000
 LIST_LEN=3000000
-CPU=1
+VIB_LEN=5000000
+
+ECOLI_COV=40
+SAL_COV=30
+CAMPY_COV=20
+LIST_COV=20
+VIB_COV=40
+
+CPU=8
 
 
 # Parse command-line options
@@ -28,9 +36,6 @@ do
     key="$1"
 
     case $key in
-	-r|--run)
-	    RUN="$2"
-	    shift;;
 	-t|--target)
 	    TARGET="$2"
 	    shift;;
@@ -43,8 +48,8 @@ do
 	--full)
 	    MODE=full
 	    ;;
-	-h|--help|*)
-	    printf "\nUSAGE: perform_run_qc.sh -r run_ID [options]\n"
+	-h|--help)
+	    printf "\nUSAGE: perform_run_qc.sh run_ID [options]\n"
 	    printf "\nOptions: \tdefault"
 	    printf "\n-t --target \t[./run_ID] \toutput directory"
 	    printf "\n-n --num_cpus \t[8] \t\tnumber of cpus"
@@ -52,7 +57,8 @@ do
 	    printf "\n--full \t\t\t\tcompute stats using all reads\n\n"
 	    exit;;
 	*)
-	;;
+	    RUN="$1"
+	    ;;
     esac
     shift
 done
@@ -131,11 +137,12 @@ fi
 echo
 
 # Check to see if QC has already been done
-if [ -f "$TARGET"/"$RUN"_qc.tsv ]
+outfile="$RUN"_QC.csv
+if [ -f "$TARGET"/"$outfile" ]
 then
 
     printf "It appears that QC has already been performed.\n"
-    printf "(A file named %s already exists).\n" "$RUN"_qc.tsv
+    printf "(A file named %s already exists).\n" "$outfile"
     printf "Do you still want to perform QC? (y/n)\n"
     read -s -n 1 reply
 
@@ -153,7 +160,7 @@ fi
 
 
 # Initialize output file header
-printf "$HEADER" > "$TARGET"/"$RUN"_qc.tsv
+printf "$HEADER" > "$TARGET"/"$outfile"
 printf "\nPerforming run QC...\n\n"
 
 if [ "$MODE" = "fast" ]
@@ -169,8 +176,8 @@ then
     run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAC*.fastq \
 				-e $CAMPY_LEN \
 				${params[@]} \
-	| get_read_metrics.awk -v cov=20 \
-	      >> "$TARGET"/"$RUN"_qc.tsv
+	| get_read_metrics.awk -v cov=$CAMPY_COV \
+	      >> "$TARGET"/"$outfile"
     echo "Finished processing Campylobacter samples."
 else
     echo "No Campylobacter samples found."
@@ -181,8 +188,8 @@ then
     run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAE*.fastq \
 				-e $ECOLI_LEN \
 				${params[@]} \
-	| get_read_metrics.awk -v cov=40 \
-	      >> "$TARGET"/"$RUN"_qc.tsv
+	| get_read_metrics.awk -v cov=$ECOLI_COV \
+	      >> "$TARGET"/"$outfile"
     echo "Finished processing E. coli samples."
 else
     echo "No E. coli samples found."
@@ -193,8 +200,8 @@ then
     run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAL*.fastq \
 				-e $LIST_LEN \
 				${params[@]} \
-	| get_read_metrics.awk -v cov=20 \
-	      >> "$TARGET"/"$RUN"_qc.tsv
+	| get_read_metrics.awk -v cov=$LIST_COV \
+	      >> "$TARGET"/"$outfile"
     echo "Finished processing Listeria samples."
 else
     echo "No Listeria samples found."
@@ -205,11 +212,23 @@ then
     run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAS*.fastq \
 				-e $SAL_LEN \
 				${params[@]} \
-	| get_read_metrics.awk -v cov=30 \
-	      >> "$TARGET"/"$RUN"_qc.tsv
+	| get_read_metrics.awk -v cov=$SAL_COV \
+	      >> "$TARGET"/"$outfile"
     echo "Finished processing Salmonella samples."
 else
-    "No Salmonella samples found."
+    echo "No Salmonella samples found."
+fi
+
+if [ ! -z "$(ls "$TARGET" | grep "PNUSAV.*\.fastq\.gz")" ]
+then
+    run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAS*.fastq \
+				-e $VIB_LEN \
+				${params[@]} \
+	| get_read_metrics.awk -v cov=$VIB_COV \
+	      >> "$TARGET"/"$outfile"
+    echo "Finished processing Vibrio samples."
+else
+    echo "No Vibrio samples found."
 fi
 
 echo
