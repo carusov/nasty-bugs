@@ -1,8 +1,8 @@
 #!/bin/bash
 
-### Author: Vincent Caruso
+### Author: Vincent Caruso & Mark Klick
 ### Date Written: June 6, 2018
-### Date Modified: June 6, 2018
+### Date Modified: August 2018
 ### Purpose: This script measures basic QC metrics for each sample in a
 ### specified run, and generates a simple QC report. The script is intended to
 ### perform the same or similar QC checks that PulseNet performs when they
@@ -221,7 +221,7 @@ fi
 
 if [ ! -z "$(ls "$TARGET" | grep "PNUSAV.*\.fastq\.gz")" ]
 then
-    run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAS*.fastq \
+    run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAV*.fastq \
 				-e $VIB_LEN \
 				${params[@]} \
 	| get_read_metrics.awk -v cov=$VIB_COV \

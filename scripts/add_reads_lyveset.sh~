@@ -1,0 +1,40 @@
+#!/bin/bash
+
+### Author: Mark Klick
+### Date written: 8/13/18
+### Last modified: 8/13/18
+### Purpose: This script adds reads to a lyve_set project
+
+# Define default parameters
+
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+
+    case $key in
+		-p|--lyveset_project)
+			LYVE_PROJ="$2"
+			shift;;
+		-i|--input_dir)
+			DIR="$2"
+			shift;;
+		-h|--help)
+			printf "\n\n"
+			exit;;
+		*)
+			printf "\nERROR: Invalid script usage. Here is the proper usage for this script:\n"
+			add_reads_lyveset.sh -h
+			exit 1;;
+	esac
+	shift
+done
+
+
+DIR=$(readlink -f "$DIR")
+
+files=$(ls "$DIR")
+
+for f in $files
+do
+  printf("%s" "$f")
+done

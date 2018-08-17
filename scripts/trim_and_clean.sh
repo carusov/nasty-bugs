@@ -1,6 +1,6 @@
 #!/bin/bash
 
-### Author: Vincent Caruso
+### Author: Vincent Caruso & Mark Klick
 ### Date: 11/16/2017
 ### This script performs quality filtering on a set of Illumina paired-end FASTQ
 ### read files. It first trims read ends (5' and 3') until a base with a
@@ -41,7 +41,6 @@ do
 	-n|--numcpus)
 	    CPU="$2"
 	    shift;;
-	    ;;
 	-h|--help)
 	    printf "\nUSAGE: trim_and_clean.sh [-q/-t minimum quality/minimum bases to trim]\n"
 	    printf "\nOptions: \t[default]"
