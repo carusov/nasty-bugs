@@ -1,5 +1,9 @@
 #!/bin/bash
 
+### Author: Vincent Caruso and Mark Klick
+### Purpose: given a file that contains sra accession numbers and optional 
+### renaming strings, .fastq files will be downloaded
+  
 # set up default parameters
 OUTDIR=$PWD
 

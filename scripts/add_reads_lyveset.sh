@@ -58,7 +58,7 @@ fi
 if [ -z "$REF" ]; then
 	echo "no reference argument supplied"
 else
-	#REF=$(readlink -f "$REF")
+	REF=$(readlink -f "$REF")
 	echo "adding $REF to the lyve_set project"
 	set_manage.pl "$LYVE_PROJ" --change-reference "$REF"
 fi
