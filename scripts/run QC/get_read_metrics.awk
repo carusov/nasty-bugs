@@ -17,15 +17,24 @@ NR > 1 {
     }
     else {
 	status = "fail"
-	if ($6 < minq){
+	if ($6 < minq && $9 >= cov && $2 >= min_avg_read_length){
 		reason = "low quality"
-		if ($9 < cov){
-			reason = reason"| low coverage"
-		}
 	}
-    	else{
-		reason = "low coverage"
+	else if ($6 < minq && $9 >= cov && $2 <  min_avg_read_length){
+		reason = "low quality low average read length"
+	}
+	else if ($6 >= minq && $9 >= cov && $2 <  min_avg_read_length){
+		reason = "low average read length"
+	}
+    	else if ($6 >= minq && $9 < cov && $2 < min_avg_read_length){
+		reason = "low coverage low average read length"
     	}
+	else if ($6 <  minq && $9 < cov && $2 >= min_avg_read_length){
+		reason = "low quality low coverage"
+	}
+	else{
+		reason = "low coverage"
+	}
     }
 
     print $0, status, reason
