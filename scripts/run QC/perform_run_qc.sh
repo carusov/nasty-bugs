@@ -2,7 +2,7 @@
 
 ### Author: Vincent Caruso & Mark Klick
 ### Date Written: June 6, 2018
-### Date Modified: August 2018
+### Date Modified: September 2018
 ### Purpose: This script measures basic QC metrics for each sample in a
 ### specified run, and generates a simple QC report. The script is intended to
 ### perform the same or similar QC checks that PulseNet performs when they
@@ -33,36 +33,28 @@ CPU=8
 # Parse command-line options
 while [[ $# -gt 0 ]]
 do
-    key="$1"
-
-    case $key in
-	-t|--target)
-	    TARGET="$2"
-	    shift;;
-	-n|--num_cpus)
-	    CPU="$2"
-	    shift;;
-	--fast)
-	    MODE=fast
-	    ;;
-	--full)
-	    MODE=full
-	    ;;
-	-h|--help)
-	    printf "\nUSAGE: perform_run_qc.sh run_ID [options]\n"
-	    printf "\nOptions: \tdefault"
-	    printf "\n-t --target \t[./run_ID] \toutput directory"
-	    printf "\n-n --num_cpus \t[8] \t\tnumber of cpus"
-	    printf "\n--fast \t\t[default] \testimate stats using 1%% of reads"
-	    printf "\n--full \t\t\t\tcompute stats using all reads\n\n"
-	    exit;;
-	*)
-	    RUN="$1"
-	    ;;
-    esac
-    shift
+	key="$1"
+	case $key in
+		-t)
+			TARGET="$2"
+			shift;;
+		-r)
+			RUN="$2"
+			shift;;
+		-I)
+			INTER="$2"
+			shift;;
+		-h)
+			printf "\nUSAGE: perform_run_qc.sh -r run_ID\n"
+			printf "\nOptions: \tdefault"
+			printf "\n--num_cpus \t[8] \t\tnumber of CPUs"
+			printf "\n--fast \t\t[default] \testimate stats using 1% of reads"
+			exit;;
+		*)
+			;;
+	esac
+	shift
 done
-
 
 # Check for run name parameter
 if [ -z "$RUN" ]
@@ -98,46 +90,49 @@ printf "Downloading samples...\n"
 download_run_basespace.sh -r "$RUN" \
 			  -t "$TARGET"
 
-# Assemble read pair files into a single interleaved file
-if [ ! -d "$TARGET"/interleaved ]
-then
-    mkdir "$TARGET"/interleaved
-fi
-
-# Clean up temporary files from any previously interrupted processing
-rm -f "$TARGET"/interleaved/temp.fastq
-
-if [ ! -z "$(ls "$TARGET" | grep ".*_R1.*\.fastq\.gz")" ]
-then
-
-    printf "Interleaving paired-end FASTQ files...\n"
-    for f in $(ls "$TARGET"/*_R1*.fastq.gz)
-    do
-	bn=$(basename $f)
-	pre=${bn%_R1*}
-	suf=${bn#*_R1}
-
-	if [ ! -f "$TARGET"/interleaved/$pre".fastq" ]
+if [ -z "$INTER" ]; then
+	echo "performing QC on R1 and R2 separately"
+else
+	# Assemble read pair files into a single interleaved file
+	if [ ! -d "$TARGET"/interleaved ]
 	then
+    		mkdir "$TARGET"/interleaved
+	fi
 
-	    run_assembly_shuffleReads.pl "$TARGET"/$pre"_R1"$suf \
+	# Clean up temporary files from any previously interrupted processing
+	rm -f "$TARGET"/interleaved/temp.fastq
+
+	if [ ! -z "$(ls "$TARGET" | grep ".*_R1.*\.fastq\.gz")" ]
+	then
+    		printf "Interleaving paired-end FASTQ files...\n"
+    		for f in $(ls "$TARGET"/*_R1*.fastq.gz)
+    		do
+			bn=$(basename $f)
+			pre=${bn%_R1*}
+			suf=${bn#*_R1}
+
+			if [ ! -f "$TARGET"/interleaved/$pre".fastq" ]
+			then
+
+	    			run_assembly_shuffleReads.pl "$TARGET"/$pre"_R1"$suf \
 					 "$TARGET"/$pre"_R2"$suf \
 					 > temp.fastq
-	    mv temp.fastq "$TARGET"/interleaved/$pre".fastq"
-
+	    			mv temp.fastq "$TARGET"/interleaved/$pre".fastq"
+			fi
+		echo $pre "shuffled"
+		# pigz "$TARGET"/$pre".fastq"
+		# echo $pre " compressed"
+    		done
 	fi
-	
-	    echo $pre "shuffled"
-	    #	pigz "$TARGET"/$pre".fastq"
-	    #	echo $pre " compressed"
-
-    done
 fi
 
-echo
-
 # Check to see if QC has already been done
-outfile="$RUN"_QC.csv
+if [ -z "$INTER" ]; then
+        outfile="$RUN"_QC.csv
+    else
+        outfile="$RUN"_interleaved_QC.csv
+fi
+
 if [ -f "$TARGET"/"$outfile" ]
 then
 
@@ -170,65 +165,131 @@ else
     params=(--numcpus $CPU)
 fi
 
-# Run the CG Pipeline read metrics script
-if [ ! -z "$(ls "$TARGET" | grep "PNUSAC.*\.fastq\.gz")" ]
-then
-    run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAC*.fastq \
+if [ -z "$INTER" ]; then
+	echo "RUNNING QC ON R1 and R2 SEPARATELY"
+
+	# Run the CG Pipeline read metrics script
+	if [ ! -z "$(ls "$TARGET" | grep "PNUSAC.*\.fastq\.gz")" ]
+	then
+    		run_assembly_readMetrics.pl "$TARGET"/PNUSAC*.fastq.gz \
 				-e $CAMPY_LEN \
 				${params[@]} \
-	| get_read_metrics.awk -v cov=$CAMPY_COV \
-	      >> "$TARGET"/"$outfile"
-    echo "Finished processing Campylobacter samples."
-else
-    echo "No Campylobacter samples found."
-fi
+			| get_read_metrics_R1R2.awk -v cov=$CAMPY_COV \
+	      		>> "$TARGET"/"$outfile"
+    		echo "Finished processing Campylobacter samples."
+	else
+    		echo "No Campylobacter samples found."
+	fi
 
-if [ ! -z "$(ls "$TARGET" | grep "PNUSAE.*\.fastq\.gz")" ]
-then
-    run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAE*.fastq \
+	if [ ! -z "$(ls "$TARGET" | grep "PNUSAE.*\.fastq\.gz")" ]
+	then
+    		run_assembly_readMetrics.pl "$TARGET"/PNUSAE*.fastq.gz \
 				-e $ECOLI_LEN \
 				${params[@]} \
-	| get_read_metrics.awk -v cov=$ECOLI_COV \
-	      >> "$TARGET"/"$outfile"
-    echo "Finished processing E. coli samples."
-else
-    echo "No E. coli samples found."
-fi
+			| get_read_metrics_R1R2.awk -v cov=$ECOLI_COV \
+	      		>> "$TARGET"/"$outfile"
+    		echo "Finished processing E. coli samples."
+	else
+    		echo "No E. coli samples found."
+	fi
 
-if [ ! -z "$(ls "$TARGET" | grep "PNUSAL.*\.fastq\.gz")" ]
-then
-    run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAL*.fastq \
+	if [ ! -z "$(ls "$TARGET" | grep "PNUSAL.*\.fastq\.gz")" ]
+	then
+    		run_assembly_readMetrics.pl "$TARGET"/PNUSAL*.fastq.gz \
 				-e $LIST_LEN \
 				${params[@]} \
-	| get_read_metrics.awk -v cov=$LIST_COV \
-	      >> "$TARGET"/"$outfile"
-    echo "Finished processing Listeria samples."
-else
-    echo "No Listeria samples found."
-fi
+			| get_read_metrics_R1R2.awk -v cov=$LIST_COV \
+	      		>> "$TARGET"/"$outfile"
+    		echo "Finished processing Listeria samples."
+	else
+    		echo "No Listeria samples found."
+	fi
 
-if [ ! -z "$(ls "$TARGET" | grep "PNUSAS.*\.fastq\.gz")" ]
-then
-    run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAS*.fastq \
+	if [ ! -z "$(ls "$TARGET" | grep "PNUSAS.*\.fastq\.gz")" ]
+	then
+    		run_assembly_readMetrics.pl "$TARGET"/PNUSAS*.fastq.gz \
 				-e $SAL_LEN \
 				${params[@]} \
-	| get_read_metrics.awk -v cov=$SAL_COV \
-	      >> "$TARGET"/"$outfile"
-    echo "Finished processing Salmonella samples."
-else
-    echo "No Salmonella samples found."
-fi
+			| get_read_metrics_R1R2.awk -v cov=$SAL_COV \
+	      		>> "$TARGET"/"$outfile"
+    		echo "Finished processing Salmonella samples."
+	else
+    		echo "No Salmonella samples found."
+	fi
 
-if [ ! -z "$(ls "$TARGET" | grep "PNUSAV.*\.fastq\.gz")" ]
-then
-    run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAV*.fastq \
+	if [ ! -z "$(ls "$TARGET" | grep "PNUSAV.*\.fastq\.gz")" ]
+	then
+    		run_assembly_readMetrics.pl "$TARGET"/PNUSAV*.fastq.gz \
 				-e $VIB_LEN \
 				${params[@]} \
-	| get_read_metrics.awk -v cov=$VIB_COV \
-	      >> "$TARGET"/"$outfile"
-    echo "Finished processing Vibrio samples."
+			| get_read_metrics_R1R2.awk -v cov=$VIB_COV \
+	      		>> "$TARGET"/"$outfile"
+    		echo "Finished processing Vibrio samples."
+	else
+    		echo "No Vibrio samples found."
+	fi
 else
-    echo "No Vibrio samples found."
+	echo "RUNNING QC ON SHUFFLED/INTERLEAVED READS"
+        # Run the CG Pipeline read metrics script
+        if [ ! -z "$(ls "$TARGET" | grep "PNUSAC.*\.fastq\.gz")" ]
+        then
+                run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAC*.fastq \
+                                -e $CAMPY_LEN \
+                                ${params[@]} \
+                	| get_read_metrics.awk -v cov=$CAMPY_COV \
+                	>> "$TARGET"/"$outfile"
+                echo "Finished processing Campylobacter samples."
+        else
+                echo "No Campylobacter samples found."
+        fi
+
+        if [ ! -z "$(ls "$TARGET" | grep "PNUSAE.*\.fastq\.gz")" ]
+        then
+                run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAE*.fastq \
+                                -e $ECOLI_LEN \
+                                ${params[@]} \
+                	| get_read_metrics.awk -v cov=$ECOLI_COV \
+                	>> "$TARGET"/"$outfile"
+                echo "Finished processing E. coli samples."
+        else
+                echo "No E. coli samples found."
+        fi
+
+        if [ ! -z "$(ls "$TARGET" | grep "PNUSAL.*\.fastq\.gz")" ]
+        then
+                run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAL*.fastq \
+                                -e $LIST_LEN \
+                                ${params[@]} \
+                	| get_read_metrics.awk -v cov=$LIST_COV \
+                	>> "$TARGET"/"$outfile"
+                echo "Finished processing Listeria samples."
+        else
+                echo "No Listeria samples found."
+        fi
+
+        if [ ! -z "$(ls "$TARGET" | grep "PNUSAS.*\.fastq\.gz")" ]
+        then
+                run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAS*.fastq \
+                                -e $SAL_LEN \
+                                ${params[@]} \
+                	| get_read_metrics.awk -v cov=$SAL_COV \
+                	>> "$TARGET"/"$outfile"
+                echo "Finished processing Salmonella samples."
+        else
+                echo "No Salmonella samples found."
+        fi
+
+        if [ ! -z "$(ls "$TARGET" | grep "PNUSAV.*\.fastq\.gz")" ]
+        then
+                run_assembly_readMetrics.pl "$TARGET"/interleaved/PNUSAV*.fastq \
+                                -e $VIB_LEN \
+                                ${params[@]} \
+                	| get_read_metrics.awk -v cov=$VIB_COV \
+                	>> "$TARGET"/"$outfile"
+                echo "Finished processing Vibrio samples."
+        else
+                echo "No Vibrio samples found."
+        fi
 fi
 
-echo
+echo "DONE PERFORMING QC"
