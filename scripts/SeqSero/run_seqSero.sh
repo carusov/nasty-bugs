@@ -2,6 +2,8 @@
 
 ### Author: Mark Klick
 ### Date: 8/17/2018
+### Purpose: This script takes fastq files as input, exectues the seqsero.py script, then parses the output
+### which contains the computationally found serotype.
 
 # Define default parameters
 #INDIR=$PWD
