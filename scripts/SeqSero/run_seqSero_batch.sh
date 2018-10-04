@@ -45,13 +45,13 @@ TARGET=$(readlink -f "$TARGET")
 # check our parse flag to see if the SAMPLE_IDs.txt file needs to be parsed
 if [ -z "$PARSE" ]
 then
-        echo "using the specified $SAMPLE_IDs file"
-else
         grep PNUSAS.* "$TARGET"/"$SAMPLE_IDS" | cat | while read -r line line2
         do
                 echo "$line2" >> "$TARGET"/seqSero_sample_IDs.txt
         done
         SAMPLE_IDS="seqSero_sample_IDs.txt"
+else
+        echo "using the specified $SAMPLE_IDs file"
 fi
 
 outfile=BATCH_seqSero_results.txt
@@ -59,9 +59,10 @@ outfile=BATCH_seqSero_results.txt
 # execute our run_seqSero.sh script on each PNUSAS****** in our SAMPLE_IDs.txt
 cat "$TARGET"/"$SAMPLE_IDS" | while read -r line
 do
-    echo "id read from file - $line"
+    echo "\nPERFORMING SEQSERO\nid read from file - $line"
     run_seqSero.sh -s "$line"
     cat "$TARGET"/"$line"/SeqSero_result_*/Seqsero_result.txt >> "$TARGET"/"$outfile"
 
 done
 
+python3 ~/nasty-bugs/scripts/SeqSero/get_seqsero_serotypes_mod.py "$SAMPLE_IDS"
