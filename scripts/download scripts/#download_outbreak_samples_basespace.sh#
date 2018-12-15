@@ -41,24 +41,24 @@ done
 
 
 # Check to see if basespace is mounted
-if [ ! "$(ls -A $BASESPACE)" ]
-then
-    basemount -c routine "$BASESPACE"
-fi
+#if [ ! "$(ls -A $BASESPACE)" ]
+#then
+#    basemount -c routine "$BASESPACE"
+#fi
 
 # Create the default target directory name if necessary
-if [ -z "$TARGET" ]
-then
-    TARGET=$PWD/
-fi
+#if [ -z "$TARGET" ]
+#then
+#    TARGET=$PWD/
+#fi
 
 # Check to see if target directory exists, and create it if needed
-if [ ! -d "$TARGET" ]
-then
-    mkdir -p "$TARGET"
-fi
+#if [ ! -d "$TARGET" ]
+#then
+#    mkdir -p "$TARGET"
+#fi
 
-TARGET=$(readlink -f "$TARGET")
+#TARGET=$(readlink -f "$TARGET")
 
 # Download the sample FASTQ files
 cat "$TARGET"/"$SAMPLE_IDS" | while read -r line
