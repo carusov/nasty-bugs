@@ -36,6 +36,7 @@ Salmonella
 >>SeqSero https://github.com/denglab/SeqSero  
 
 **Isolate Relatedness Analysis Pipeline**
+
 Determine Reference Assembly  
 >Software tools  
 >>CLC BIO  
