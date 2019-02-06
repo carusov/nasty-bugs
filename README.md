@@ -16,9 +16,11 @@ CG-Pipeline https://github.com/lskatz/CG-Pipeline
 >Software tools  
 >>run_assembly_shuffleReads.pl  
 >>run_assembly_trimClean.pl  
+
 Contamination Check  
 >Software tools  
 >>Kraken https://ccb.jhu.edu/software/kraken/ https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4053813/   
+
 Read Metrics  
 >Software tools  
 >>run_assembly_readMetrics.pl  
